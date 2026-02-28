@@ -10,7 +10,7 @@ from sklearn.inspection import permutation_importance
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-class DengueTabularNN(nn.Module):
+class ArbovirosesMLP(nn.Module):
     def __init__(self, numericals_shape, embedding_sizes, hidden_layers=[600, 300, 200, 100], probability_dropout=[0.05, 0.3]):
         super().__init__()
 
