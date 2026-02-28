@@ -6,16 +6,28 @@ from lightgbm import LGBMClassifier as _LGBMClassifier
 from sklearn.metrics import f1_score, precision_score, recall_score
 
 
-class LGBMDiseaseClassifier:
-    def __init__(self, n_estimators=2000, learning_rate=0.03, subsample=0.8, colsample_bytree=0.8, device='gpu'):
-        self.model = _LGBMClassifier(
-            n_estimators=n_estimators,
-            learning_rate=learning_rate,
-            subsample=subsample,
-            colsample_bytree=colsample_bytree,
-            device=device,
-        )
-        self.feature_names = None
+class GradientBoostingDiseaseClassifier:
+    def __init__(self, model, n_estimators=2000, learning_rate=0.03, subsample=0.8, colsample_bytree=0.8, device='gpu'):
+
+        if model == 'lgbm':
+            self.model = _LGBMClassifier(
+                n_estimators=n_estimators,
+                learning_rate=learning_rate,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree,
+                device=device,
+            )
+            self.feature_names = None
+
+        elif model == 'xgb':
+            from xgboost import XGBClassifier
+            self.model = XGBClassifier(
+                n_estimators=n_estimators,
+                learning_rate=learning_rate,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree
+            )
+            self.feature_names = None
 
     def _prepare_data(self, x_cat, x_num, categorical_columns, numerical_columns):
         return pd.concat([

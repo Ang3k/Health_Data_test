@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.append(str(Path.cwd().parent))
 
 from data_processing.disease_dataset_process import DataProcessor
-from models_classes.lgbm_classifier import LGBMDiseaseClassifier
+from models_classes.lgbm_classifier import GradientBoostingDiseaseClassifier
 from models_classes.mlp_disease_neural_net import ArbovirosesMLP, device
 
 
@@ -99,22 +99,34 @@ class ModelsOrchestrator:
         return model
 
     def train_lgbm(self, x_train_cat, x_train_num, y_train):
-        model = LGBMDiseaseClassifier()
+        model = GradientBoostingDiseaseClassifier('lgbm')
         model.fit(x_train_cat, x_train_num, y_train, self.categorical_columns, self.numerical_columns)
         return model
 
-    def combined_predict(self, mlp_model, lgbm_model, x_test_cat, x_test_num):
+    def train_xgb(self, x_train_cat, x_train_num, y_train):
+        model = GradientBoostingDiseaseClassifier('xgb')
+        model.fit(x_train_cat, x_train_num, y_train, self.categorical_columns, self.numerical_columns)
+        return model
+
+    def combined_predict(self, mlp_model, lgbm_model, xgb_model, x_test_cat, x_test_num):
         dummy = torch.zeros(x_test_cat.shape[0], dtype=torch.long)
         loader = DataLoader(TensorDataset(x_test_cat, x_test_num, dummy), batch_size=4096, shuffle=False)
         mlp_probs  = mlp_model.predict_proba(loader).numpy()
         lgbm_probs = lgbm_model.predict_proba(x_test_cat, x_test_num, self.categorical_columns, self.numerical_columns)
-        return (mlp_probs + lgbm_probs) / 2
+        xgb_probs  = xgb_model.predict_proba(x_test_cat, x_test_num, self.categorical_columns, self.numerical_columns)
+        return (mlp_probs + lgbm_probs + xgb_probs) / 3
 
-    def evaluate_combined(self, mlp_model, lgbm_model, x_test_cat, x_test_num, thresholds=None):
+    def evaluate_combined(self, mlp_model, lgbm_model, xgb_model, x_test_cat, x_test_num, thresholds=None):
         if thresholds is None:
             thresholds = [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6]
 
-        combined_probs = self.combined_predict(mlp_model, lgbm_model, x_test_cat, x_test_num)
+        dummy = torch.zeros(x_test_cat.shape[0], dtype=torch.long)
+        loader = DataLoader(TensorDataset(x_test_cat, x_test_num, dummy), batch_size=4096, shuffle=False)
+        mlp_probs  = mlp_model.predict_proba(loader).numpy()
+        lgbm_probs = lgbm_model.predict_proba(x_test_cat, x_test_num, self.categorical_columns, self.numerical_columns)
+        xgb_probs  = xgb_model.predict_proba(x_test_cat, x_test_num, self.categorical_columns, self.numerical_columns)
+        combined_probs = (mlp_probs + lgbm_probs + xgb_probs) / 3
+
         y_true = self.y_test.cpu().numpy()
 
         print(f'{"Threshold":>10} | {"Accuracy":>10} | {"Precision":>10} | {"Recall":>10} | {"F1":>10}')
@@ -128,10 +140,15 @@ class ModelsOrchestrator:
                 f'{f1_score(y_true, preds):>10.4f}'
             )
 
-        preds_04 = (combined_probs > 0.4).astype(int)
+        mlp_preds  = (mlp_probs  > 0.4).astype(int)
+        lgbm_preds = (lgbm_probs > 0.4).astype(int)
+        xgb_preds  = (xgb_probs  > 0.4).astype(int)
+
         confirmation_df = pd.DataFrame({
-            'xgb':        y_true,
-            'neural_net': preds_04,
-            'confirmation': y_true == preds_04,
+            'true':         y_true,
+            'mlp':          mlp_preds,
+            'lgbm':         lgbm_preds,
+            'xgb':          xgb_preds,
+            'all_agree':    (mlp_preds == lgbm_preds) & (lgbm_preds == xgb_preds),
         })
         return confirmation_df
