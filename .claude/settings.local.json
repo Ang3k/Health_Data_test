@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Users/angej/AppData/Local/Programs/Python/Python311/python.exe\" -c \"import torch; print\\(''PyTorch:'', torch.__version__\\); print\\(''CUDA available:'', torch.cuda.is_available\\(\\)\\); print\\(''CUDA built with:'', torch.version.cuda\\)\")",
+      "Bash(\"/c/Users/angej/AppData/Local/Programs/Python/Python314/python.exe\" -c \"import torch; print\\(''PyTorch:'', torch.__version__\\); print\\(''CUDA available:'', torch.cuda.is_available\\(\\)\\); print\\(''CUDA built with:'', torch.version.cuda\\)\")",
+      "Bash(cmd /c '\"\"/c/Users/angej/AppData/Local/Programs/Python/Python311/python.exe\"\" -c \"\"import torch; print\\(torch.__version__, torch.version.cuda, torch.cuda.is_available\\(\\)\\)\"\"')",
+      "Bash(cmd /c:*)",
+      "Bash(cd \"/c/Users/angej/Documents/2_Programação/Pytorch_Learning\" && .venv/Scripts/python --version 2>&1 && .venv/Scripts/python -m ipykernel --version 2>&1 && .venv/Scripts/jupyter kernelspec list 2>&1)"
+    ]
+  }
+}
