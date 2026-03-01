@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -333,16 +334,18 @@ CHIK_MAPPING = {
     13 : 1,  # Confirmed Chikungunya
 }
 
+_DATA_DIR = Path(__file__).resolve().parents[2] / 'data'
+
 DATA_PATHS = {
     'dengue': [
-        "C:\\Users\\angej\\Documents\\2_Programação\\health_index_project\\data\\DENGBR17.csv",
-        "C:\\Users\\angej\\Documents\\2_Programação\\health_index_project\\data\\DENGBR18.csv",
-        "C:\\Users\\angej\\Documents\\2_Programação\\health_index_project\\data\\DENGBR19.csv",
+        _DATA_DIR / 'DENGBR17.csv',
+        _DATA_DIR / 'DENGBR18.csv',
+        _DATA_DIR / 'DENGBR19.csv',
     ],
     'chikungunya': [
-        "C:\\Users\\angej\\Documents\\2_Programação\\health_index_project\\data\\CHIKBR17.csv",
-        "C:\\Users\\angej\\Documents\\2_Programação\\health_index_project\\data\\CHIKBR18.csv",
-        "C:\\Users\\angej\\Documents\\2_Programação\\health_index_project\\data\\CHIKBR19.csv",
+        _DATA_DIR / 'CHIKBR17.csv',
+        _DATA_DIR / 'CHIKBR18.csv',
+        _DATA_DIR / 'CHIKBR19.csv',
     ],
 }
 
