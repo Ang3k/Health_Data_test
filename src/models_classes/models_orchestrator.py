@@ -35,16 +35,16 @@ class ModelsOrchestrator:
 
         self.y_train = y_train
         self.y_test = y_test
-        self.train_loader = DataLoader(TensorDataset(x_train_cat, x_train_num, y_train), batch_size=4096, shuffle=True)
-        self.test_loader  = DataLoader(TensorDataset(x_test_cat,  x_test_num,  y_test),  batch_size=4096, shuffle=False)
+        self.train_loader = DataLoader(TensorDataset(x_train_cat, x_train_num, y_train), batch_size=8192, shuffle=True)
+        self.test_loader  = DataLoader(TensorDataset(x_test_cat,  x_test_num,  y_test),  batch_size=8192, shuffle=False)
 
         return x_train_cat, x_test_cat, x_train_num, x_test_num, y_train, y_test, embedding_sizes
 
-    def train_mlp(self, embedding_sizes, save_path, epochs=150, patience=8):
+    def train_mlp(self, embedding_sizes, save_path, epochs=150, patience=6):
         model = ArbovirosesMLP(
             numericals_shape=len(self.numerical_columns),
             embedding_sizes=embedding_sizes,
-            hidden_layers=[2048, 1024, 512, 256],
+            hidden_layers=[1024, 512, 256, 128],
             probability_dropout=[0.1, 0.2],
         ).to(device)
 
@@ -116,7 +116,7 @@ class ModelsOrchestrator:
         xgb_probs  = xgb_model.predict_proba(x_test_cat, x_test_num, self.categorical_columns, self.numerical_columns)
         return (mlp_probs + lgbm_probs + xgb_probs) / 3
 
-    def evaluate_combined(self, mlp_model, lgbm_model, xgb_model, x_test_cat, x_test_num, thresholds=None):
+    def evaluate_combined(self, threshold = 0.4, mlp_model=None, lgbm_model=None, xgb_model=None, x_test_cat=None, x_test_num=None, thresholds=None):
         if thresholds is None:
             thresholds = [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6]
 
@@ -140,15 +140,30 @@ class ModelsOrchestrator:
                 f'{f1_score(y_true, preds):>10.4f}'
             )
 
-        mlp_preds  = (mlp_probs  > 0.4).astype(int)
-        lgbm_preds = (lgbm_probs > 0.4).astype(int)
-        xgb_preds  = (xgb_probs  > 0.4).astype(int)
+        mlp_preds  = (mlp_probs  > threshold).astype(int)
+        lgbm_preds = (lgbm_probs > threshold).astype(int)
+        xgb_preds  = (xgb_probs  > threshold).astype(int)
+
+        mlp_TPweight  = float(((mlp_preds  == 1) & (y_true == 1)).sum() / (y_true == 1).sum())
+        lgbm_TPweight = float(((lgbm_preds == 1) & (y_true == 1)).sum() / (y_true == 1).sum())
+        xgb_TPweight  = float(((xgb_preds  == 1) & (y_true == 1)).sum() / (y_true == 1).sum())
+
+        print(f"MLP TP: {mlp_TPweight:.2%}")
+        print(f"LGBM TP: {lgbm_TPweight:.2%}")
+        print(f"XGB TP: {xgb_TPweight:.2%}")
+
+        weighted_confidence = (mlp_probs * mlp_TPweight + lgbm_probs * lgbm_TPweight + xgb_probs * xgb_TPweight) / (mlp_TPweight + lgbm_TPweight + xgb_TPweight)
 
         confirmation_df = pd.DataFrame({
-            'true':         y_true,
-            'mlp':          mlp_preds,
-            'lgbm':         lgbm_preds,
-            'xgb':          xgb_preds,
-            'all_agree':    (mlp_preds == lgbm_preds) & (lgbm_preds == xgb_preds),
+            'actual':              y_true,
+            'mlp_pred':            mlp_preds,
+            'mlp_confidence':      mlp_probs,
+            'lgbm_pred':           lgbm_preds,
+            'lgbm_confidence':     lgbm_probs,
+            'xgb_pred':            xgb_preds,
+            'xgb_confidence':      xgb_probs,
+            'unanimous':           (mlp_preds == 1) & (lgbm_preds == 1) & (xgb_preds == 1),
+            'weighted_confidence': weighted_confidence,
+            'weighted_positive':   weighted_confidence > threshold,
         })
         return confirmation_df
