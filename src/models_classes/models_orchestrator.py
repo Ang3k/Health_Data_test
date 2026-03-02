@@ -98,13 +98,13 @@ class ModelsOrchestrator:
         model.load_state_dict(torch.load(save_path, weights_only=True))
         return model
 
-    def train_lgbm(self, x_train_cat, x_train_num, y_train):
-        model = GradientBoostingDiseaseClassifier('lgbm')
+    def train_lgbm(self, fast_train = True, x_train_cat=None, x_train_num=None, y_train=None):
+        model = GradientBoostingDiseaseClassifier('lgbm', fast_train=fast_train)
         model.fit(x_train_cat, x_train_num, y_train, self.categorical_columns, self.numerical_columns)
         return model
 
-    def train_xgb(self, x_train_cat, x_train_num, y_train):
-        model = GradientBoostingDiseaseClassifier('xgb')
+    def train_xgb(self, fast_train = True, x_train_cat=None, x_train_num=None, y_train=None):
+        model = GradientBoostingDiseaseClassifier('xgb', fast_train=fast_train)
         model.fit(x_train_cat, x_train_num, y_train, self.categorical_columns, self.numerical_columns)
         return model
 
