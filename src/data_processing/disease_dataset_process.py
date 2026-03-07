@@ -529,7 +529,9 @@ class DataProcessor:
         p['symptom_day'] = symptom_date.day
         p['symptom_month_end'] = int(symptom_date.is_month_end)
         p['symptom_year_end'] = int(symptom_date.is_year_end)
-        p['symptom_epi_week'] = symptom_date.isocalendar()[1]
+        # SINAN stores epi week as YYYYWW (e.g. 202509 = week 9 of 2025)
+        iso = symptom_date.isocalendar()
+        p['symptom_epi_week'] = iso[0] * 100 + iso[1]
 
         days = (notif_date - symptom_date).days
         p['days_to_notification'] = max(0, min(days, 90)) if pd.notnull(days) else self.days_to_notification_median

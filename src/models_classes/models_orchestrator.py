@@ -1,6 +1,7 @@
 import sys
 import json
 import joblib
+import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -227,7 +228,8 @@ class ModelsOrchestrator:
             'unanimous': all(p > threshold for p in [mlp_prob, lgbm_prob, xgb_prob]),
         }
 
-    def save_artifacts(self, directory, mlp_model, lgbm_model, xgb_model, embedding_sizes):
+    def save_artifacts(self, directory, mlp_model, lgbm_model, xgb_model, embedding_sizes,
+                       x_test_cat=None, x_test_num=None, y_test=None, n_examples=200):
         """Save all models and preprocessing artifacts for inference without training data."""
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
@@ -241,6 +243,18 @@ class ModelsOrchestrator:
 
         # Save fitted encoder
         joblib.dump(self.data_processor.encoder, directory / 'encoder.joblib')
+
+        # Save test examples for demo
+        if x_test_cat is not None and x_test_num is not None and y_test is not None:
+            n = min(n_examples, len(y_test))
+            idx = np.random.choice(len(y_test), n, replace=False)
+            np.savez(
+                directory / 'test_examples.npz',
+                x_cat=x_test_cat[idx].cpu().numpy(),
+                x_num=x_test_num[idx].cpu().numpy(),
+                y=y_test[idx].cpu().numpy(),
+            )
+            print(f'Saved {n} test examples')
 
         # Save metadata as JSON
         artifacts = {
@@ -310,4 +324,15 @@ class ModelsOrchestrator:
         xgb_model.feature_names = artifacts['categorical_columns'] + list(artifacts['numerical_columns'])
         xgb_model._model_type = 'xgb'
 
-        return orch, mlp_model, lgbm_model, xgb_model
+        # Load test examples if available
+        test_examples = None
+        npz_path = directory / 'test_examples.npz'
+        if npz_path.exists():
+            data = np.load(npz_path)
+            test_examples = {
+                'x_cat': torch.tensor(data['x_cat'], dtype=torch.long),
+                'x_num': torch.tensor(data['x_num'], dtype=torch.float32),
+                'y': data['y'],
+            }
+
+        return orch, mlp_model, lgbm_model, xgb_model, test_examples

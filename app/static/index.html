@@ -4,18 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classificador de Arboviroses</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
 <div class="container">
     <h1>Classificador de Arboviroses</h1>
-    <p class="subtitle">Ensemble de MLP + LightGBM + XGBoost para classificação de Dengue e Chikungunya</p>
+    <p class="subtitle">Sistema de apoio à classificação de Dengue e Chikungunya</p>
+
+    <!-- Explanation -->
+    <div class="form-section explanation">
+        <h2>Como funciona?</h2>
+        <p>Este sistema utiliza <strong>três modelos de inteligência artificial</strong> treinados com dados reais de notificações do SINAN (Sistema de Informação de Agravos de Notificação) dos anos de 2017 a 2019.</p>
+        <p>Você preenche os sintomas e dados do paciente, e os modelos analisam o conjunto de informações para estimar a probabilidade de ser um caso confirmado ou descartado da doença selecionada.</p>
+        <p>Os três modelos (Rede Neural, LightGBM e XGBoost) trabalham de forma independente e o resultado final é a média ponderada das suas respostas — quando todos concordam, a confiança é maior.</p>
+        <p style="margin-top:0.8rem;"><strong>Importante sobre os resultados:</strong> o modelo foi ajustado para <strong>evitar falsos negativos</strong> — ou seja, prioriza não deixar passar um caso real de dengue ou chikungunya. Seguindo a lógica de "melhor prevenir", é mais comum o modelo apontar positivo para alguém que na verdade não tem a doença do que deixar de alertar alguém que realmente tem.</p>
+        <p>Na prática, os modelos acertam cerca de <strong>85% a 95%</strong> dos casos positivos reais (recall), com destaque para o LightGBM (~95%) e XGBoost (~91%) na dengue, e LightGBM (~96%) e XGBoost (~96%) na chikungunya. A Rede Neural complementa com ~85-88% de recall.</p>
+        <p style="color:#7f8c8d; font-size:0.85rem; margin-top:0.8rem;">Este sistema é apenas uma ferramenta de apoio e <strong>não substitui</strong> o diagnóstico médico profissional.</p>
+    </div>
+
+    <!-- Test with real example -->
+    <div class="form-section">
+        <h2>Testar com exemplo real</h2>
+        <p style="margin-bottom:1rem; color:#5d6d7e;">Veja o modelo funcionando com dados reais de pacientes que <strong>não foram usados no treinamento</strong>. O sistema escolhe um caso aleatório do conjunto de teste e mostra a predição vs. o diagnóstico real.</p>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="demo_disease">Doença</label>
+                <select id="demo_disease">
+                    <option value="dengue">Dengue</option>
+                    <option value="chikungunya">Chikungunya</option>
+                </select>
+            </div>
+            <div class="form-group" style="justify-content:flex-end;">
+                <button type="button" class="demo-btn" id="demoBtn" onclick="runDemo()">Testar caso aleatório</button>
+            </div>
+        </div>
+        <div id="demoResult" style="display:none; margin-top:1rem;"></div>
+    </div>
+
+    <hr style="border:none; border-top:2px solid #d4e6f1; margin:1.5rem 0;">
 
     <form id="patientForm">
 
         <!-- Disease selection -->
         <div class="form-section">
-            <h2>Tipo de Doença</h2>
+            <h2>Classificação manual</h2>
             <div class="form-row">
                 <div class="form-group">
                     <label for="disease_type">Doença a classificar</label>
@@ -147,54 +180,18 @@
         <div class="form-section">
             <h2>Sintomas</h2>
             <div class="checkbox-grid">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="fever" name="fever">
-                    <label for="fever">Febre</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="headache" name="headache">
-                    <label for="headache">Cefaleia (Dor de cabeça)</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="myalgia" name="myalgia">
-                    <label for="myalgia">Mialgia (Dor muscular)</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="joint_pain" name="joint_pain">
-                    <label for="joint_pain">Artralgia (Dor articular)</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="retro_orbital_pain" name="retro_orbital_pain">
-                    <label for="retro_orbital_pain">Dor retro-orbital</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="nausea" name="nausea">
-                    <label for="nausea">Náusea</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="vomiting" name="vomiting">
-                    <label for="vomiting">Vômito</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="rash" name="rash">
-                    <label for="rash">Exantema (Erupção cutânea)</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="back_pain" name="back_pain">
-                    <label for="back_pain">Dor nas costas</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="conjunctivitis" name="conjunctivitis">
-                    <label for="conjunctivitis">Conjuntivite</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="arthritis" name="arthritis">
-                    <label for="arthritis">Artrite</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="petechiae" name="petechiae">
-                    <label for="petechiae">Petéquias</label>
-                </div>
+                <div class="checkbox-item"><input type="checkbox" id="fever" name="fever"><label for="fever">Febre</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="headache" name="headache"><label for="headache">Cefaleia (Dor de cabeça)</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="myalgia" name="myalgia"><label for="myalgia">Mialgia (Dor muscular)</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="joint_pain" name="joint_pain"><label for="joint_pain">Artralgia (Dor articular)</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="retro_orbital_pain" name="retro_orbital_pain"><label for="retro_orbital_pain">Dor retro-orbital</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="nausea" name="nausea"><label for="nausea">Náusea</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="vomiting" name="vomiting"><label for="vomiting">Vômito</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="rash" name="rash"><label for="rash">Exantema (Erupção cutânea)</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="back_pain" name="back_pain"><label for="back_pain">Dor nas costas</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="conjunctivitis" name="conjunctivitis"><label for="conjunctivitis">Conjuntivite</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="arthritis" name="arthritis"><label for="arthritis">Artrite</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="petechiae" name="petechiae"><label for="petechiae">Petéquias</label></div>
             </div>
         </div>
 
@@ -202,34 +199,13 @@
         <div class="form-section">
             <h2>Comorbidades</h2>
             <div class="checkbox-grid">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="diabetes" name="diabetes">
-                    <label for="diabetes">Diabetes</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="hypertension" name="hypertension">
-                    <label for="hypertension">Hipertensão</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="blood_disorder" name="blood_disorder">
-                    <label for="blood_disorder">Doença hematológica</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="liver_disease" name="liver_disease">
-                    <label for="liver_disease">Hepatopatia</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="kidney_disease" name="kidney_disease">
-                    <label for="kidney_disease">Doença renal</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="peptic_ulcer" name="peptic_ulcer">
-                    <label for="peptic_ulcer">Doença ácido-péptica</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="autoimmune_disease" name="autoimmune_disease">
-                    <label for="autoimmune_disease">Doença autoimune</label>
-                </div>
+                <div class="checkbox-item"><input type="checkbox" id="diabetes" name="diabetes"><label for="diabetes">Diabetes</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="hypertension" name="hypertension"><label for="hypertension">Hipertensão</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="blood_disorder" name="blood_disorder"><label for="blood_disorder">Doença hematológica</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="liver_disease" name="liver_disease"><label for="liver_disease">Hepatopatia</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="kidney_disease" name="kidney_disease"><label for="kidney_disease">Doença renal</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="peptic_ulcer" name="peptic_ulcer"><label for="peptic_ulcer">Doença ácido-péptica</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="autoimmune_disease" name="autoimmune_disease"><label for="autoimmune_disease">Doença autoimune</label></div>
             </div>
         </div>
 
@@ -237,30 +213,12 @@
         <div class="form-section">
             <h2>Manifestações Hemorrágicas</h2>
             <div class="checkbox-grid">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="nosebleed" name="nosebleed">
-                    <label for="nosebleed">Epistaxe (Sangramento nasal)</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="gum_bleeding" name="gum_bleeding">
-                    <label for="gum_bleeding">Gengivorragia</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="metrorrhagia" name="metrorrhagia">
-                    <label for="metrorrhagia">Metrorragia</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="petechiae_hemorrh" name="petechiae_hemorrh">
-                    <label for="petechiae_hemorrh">Petéquias (hemorrágicas)</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="hematuria" name="hematuria">
-                    <label for="hematuria">Hematúria</label>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" id="other_bleeding" name="other_bleeding">
-                    <label for="other_bleeding">Outros sangramentos</label>
-                </div>
+                <div class="checkbox-item"><input type="checkbox" id="nosebleed" name="nosebleed"><label for="nosebleed">Epistaxe (Sangramento nasal)</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="gum_bleeding" name="gum_bleeding"><label for="gum_bleeding">Gengivorragia</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="metrorrhagia" name="metrorrhagia"><label for="metrorrhagia">Metrorragia</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="petechiae_hemorrh" name="petechiae_hemorrh"><label for="petechiae_hemorrh">Petéquias (hemorrágicas)</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="hematuria" name="hematuria"><label for="hematuria">Hematúria</label></div>
+                <div class="checkbox-item"><input type="checkbox" id="other_bleeding" name="other_bleeding"><label for="other_bleeding">Outros sangramentos</label></div>
             </div>
         </div>
 
@@ -283,18 +241,15 @@ let cboData = [];
 fetch('/static/cbo_list.json')
     .then(r => r.json())
     .then(data => { cboData = data; })
-    .catch(() => { /* CBO list not available */ });
+    .catch(() => {});
 
 cboInput.addEventListener('input', () => {
     const query = cboInput.value.toUpperCase().trim();
     if (query.length < 2) { cboList.style.display = 'none'; return; }
-
     const matches = cboData.filter(name => name.includes(query)).slice(0, 15);
     if (matches.length === 0) { cboList.style.display = 'none'; return; }
-
     cboList.innerHTML = matches.map(m => `<div>${m}</div>`).join('');
     cboList.style.display = 'block';
-
     cboList.querySelectorAll('div').forEach(el => {
         el.addEventListener('click', () => {
             cboInput.value = el.textContent;
@@ -309,12 +264,139 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Demo button
+async function runDemo() {
+    const btn = document.getElementById('demoBtn');
+    const disease = document.getElementById('demo_disease').value;
+    const resultDiv = document.getElementById('demoResult');
+
+    btn.disabled = true;
+    btn.textContent = 'Carregando...';
+    resultDiv.style.display = 'none';
+
+    try {
+        const resp = await fetch(`/random_example/${disease}`);
+        const r = await resp.json();
+
+        if (r.error) {
+            resultDiv.innerHTML = `<div class="error-msg">${r.error}</div>`;
+            resultDiv.style.display = 'block';
+            return;
+        }
+
+        const diseaseName = disease === 'dengue' ? 'Dengue' : 'Chikungunya';
+        const pct = (v) => (v * 100).toFixed(1) + '%';
+        const barColor = (v) => v > 0.4 ? '#e74c3c' : '#27ae60';
+
+        const predCorrect = r.final_prediction === r.true_label;
+        const falseNegative = r.true_label === 1 && r.final_prediction === 0; // era dengue mas disse que não
+        const falsePositive = r.true_label === 0 && r.final_prediction === 1; // não era dengue mas disse que sim
+
+        let matchBg, matchBorder, matchColor, matchText;
+        if (predCorrect) {
+            matchBg = '#eafaf1'; matchBorder = '#a9dfbf'; matchColor = '#1e8449';
+            matchText = 'O modelo acertou!';
+        } else if (falseNegative) {
+            matchBg = '#fdedec'; matchBorder = '#f5b7b1'; matchColor = '#c0392b';
+            matchText = 'Falso negativo — o paciente tinha a doença mas o modelo não detectou.';
+        } else {
+            matchBg = '#fef9e7'; matchBorder = '#f9e79f'; matchColor = '#b7950b';
+            matchText = 'Falso positivo — o paciente não tinha a doença mas o modelo indicou positivo.';
+        }
+
+        // Symptom pills with inline styles
+        const pillStyle = 'display:inline-block;font-size:0.82rem;padding:0.3rem 0.75rem;border-radius:12px;font-weight:500;background:#fdebd0;color:#935116;margin:0.2rem 0.25rem;';
+        const symptomsHtml = r.symptoms_present.length > 0
+            ? r.symptoms_present.map(s => `<span style="${pillStyle}">${s}</span>`).join('')
+            : '<span style="color:#95a5a6;font-size:0.85rem;">Nenhum sintoma registrado</span>';
+
+        // Info items
+        const infoItems = [];
+        if (r.age) infoItems.push({label: 'Idade', value: Math.round(r.age) + ' anos'});
+        if (r.sex) infoItems.push({label: 'Sexo', value: r.sex});
+        if (r.race && r.race !== 'Ignorado') infoItems.push({label: 'Raça', value: r.race});
+        if (r.state) infoItems.push({label: 'Estado', value: r.state});
+        if (r.education && r.education !== 'Ignorado' && r.education !== 'Não se aplica')
+            infoItems.push({label: 'Escolaridade', value: r.education});
+        if (r.occupation && r.occupation !== '0' && r.occupation !== 'None')
+            infoItems.push({label: 'Ocupação', value: r.occupation});
+        if (r.pregnancy && r.pregnancy !== 'Não se aplica' && r.pregnancy !== 'Ignorado' && r.pregnancy !== 'Não')
+            infoItems.push({label: 'Gestante', value: r.pregnancy});
+
+        const labelSt = 'display:block;font-size:0.7rem;font-weight:600;color:#95a5a6;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:2px;';
+        const valueSt = 'display:block;font-size:0.92rem;font-weight:600;color:#2c3e50;';
+        const itemSt = 'background:#fff;border-radius:6px;padding:0.5rem 0.7rem;border:1px solid #e8ecef;';
+
+        const infoHtml = infoItems.map(c =>
+            `<div style="${itemSt}"><span style="${labelSt}">${c.label}</span><span style="${valueSt}">${c.value}</span></div>`
+        ).join('');
+
+        const trueColor = r.true_label === 1 ? '#c0392b' : '#1e8449';
+        const predColor = r.final_prediction === 1 ? '#c0392b' : '#1e8449';
+
+        resultDiv.innerHTML = `
+            <div style="background:#f8f9f9;border-radius:8px;padding:1.2rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:#7f8c8d;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:0.8rem;">
+                    Paciente de teste (dados reais não usados no treinamento)
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.6rem;margin-bottom:1rem;">
+                    ${infoHtml}
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <div style="font-size:0.78rem;font-weight:600;color:#7f8c8d;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:0.4rem;">Sintomas presentes</div>
+                    <div style="line-height:2;">${symptomsHtml}</div>
+                </div>
+                <hr style="border:none;border-top:1px solid #e0e0e0;margin:1rem 0;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.8rem;">
+                    <div style="text-align:center;padding:1rem 0.8rem;background:#fff;border-radius:8px;border:1px solid #e8ecef;">
+                        <div style="font-size:0.75rem;font-weight:600;color:#95a5a6;text-transform:uppercase;margin-bottom:0.4rem;">Diagnóstico real</div>
+                        <div style="font-size:1.2rem;font-weight:700;color:${trueColor};">${r.true_label_text}</div>
+                    </div>
+                    <div style="text-align:center;padding:1rem 0.8rem;background:#fff;border-radius:8px;border:1px solid #e8ecef;">
+                        <div style="font-size:0.75rem;font-weight:600;color:#95a5a6;text-transform:uppercase;margin-bottom:0.4rem;">Predição do modelo</div>
+                        <div style="font-size:1.2rem;font-weight:700;color:${predColor};">${r.final_prediction === 1 ? 'Positivo' : 'Negativo'} (${pct(r.weighted_probability)})</div>
+                    </div>
+                </div>
+                <div style="text-align:center;padding:0.6rem;border-radius:8px;font-weight:600;font-size:0.95rem;background:${matchBg};color:${matchColor};border:1px solid ${matchBorder};">
+                    ${matchText}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-top:1rem;">
+                    <div style="text-align:center;padding:0.8rem;border-radius:6px;background:#fff;border:1px solid #e8ecef;">
+                        <div style="font-size:0.75rem;font-weight:600;color:#7f8c8d;text-transform:uppercase;margin-bottom:0.3rem;">MLP</div>
+                        <div style="font-size:1.3rem;font-weight:700;color:${barColor(r.mlp_probability)};">${pct(r.mlp_probability)}</div>
+                        <div style="height:6px;border-radius:3px;background:#ebedef;margin-top:0.4rem;overflow:hidden;"><div style="height:100%;border-radius:3px;width:${r.mlp_probability*100}%;background:${barColor(r.mlp_probability)};"></div></div>
+                    </div>
+                    <div style="text-align:center;padding:0.8rem;border-radius:6px;background:#fff;border:1px solid #e8ecef;">
+                        <div style="font-size:0.75rem;font-weight:600;color:#7f8c8d;text-transform:uppercase;margin-bottom:0.3rem;">LightGBM</div>
+                        <div style="font-size:1.3rem;font-weight:700;color:${barColor(r.lgbm_probability)};">${pct(r.lgbm_probability)}</div>
+                        <div style="height:6px;border-radius:3px;background:#ebedef;margin-top:0.4rem;overflow:hidden;"><div style="height:100%;border-radius:3px;width:${r.lgbm_probability*100}%;background:${barColor(r.lgbm_probability)};"></div></div>
+                    </div>
+                    <div style="text-align:center;padding:0.8rem;border-radius:6px;background:#fff;border:1px solid #e8ecef;">
+                        <div style="font-size:0.75rem;font-weight:600;color:#7f8c8d;text-transform:uppercase;margin-bottom:0.3rem;">XGBoost</div>
+                        <div style="font-size:1.3rem;font-weight:700;color:${barColor(r.xgb_probability)};">${pct(r.xgb_probability)}</div>
+                        <div style="height:6px;border-radius:3px;background:#ebedef;margin-top:0.4rem;overflow:hidden;"><div style="height:100%;border-radius:3px;width:${r.xgb_probability*100}%;background:${barColor(r.xgb_probability)};"></div></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        resultDiv.style.display = 'block';
+    } catch (err) {
+        resultDiv.innerHTML = `<div class="error-msg">Erro de conexão com o servidor.</div>`;
+        resultDiv.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Testar caso aleatório';
+}
+
 // Form submission
 document.getElementById('patientForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
+    const resultCard = document.getElementById('resultCard');
     btn.disabled = true;
     btn.textContent = 'Analisando...';
+    resultCard.style.display = 'none';
 
     const form = e.target;
     const checkboxes = ['fever', 'headache', 'myalgia', 'joint_pain', 'retro_orbital_pain',
@@ -336,9 +418,7 @@ document.getElementById('patientForm').addEventListener('submit', async (e) => {
         notification_date: form.notification_date.value || null,
     };
 
-    checkboxes.forEach(cb => {
-        data[cb] = form[cb].checked ? 1 : 0;
-    });
+    checkboxes.forEach(cb => { data[cb] = form[cb].checked ? 1 : 0; });
 
     try {
         const resp = await fetch('/predict', {
